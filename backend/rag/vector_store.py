@@ -1,0 +1,104 @@
+import os
+import hashlib
+import chromadb
+from chromadb.config import Settings as ChromaSettings
+from sentence_transformers import SentenceTransformer
+
+CHROMA_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "chroma")
+COLLECTION_NAME = "sales_knowledge"
+EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+
+_client: chromadb.ClientAPI | None = None
+_collection: chromadb.Collection | None = None
+_embedder: SentenceTransformer | None = None
+
+
+def _get_embedder() -> SentenceTransformer:
+    global _embedder
+    if _embedder is None:
+        _embedder = SentenceTransformer(EMBEDDING_MODEL)
+    return _embedder
+
+
+def _get_collection() -> chromadb.Collection:
+    global _client, _collection
+    if _collection is None:
+        os.makedirs(CHROMA_DIR, exist_ok=True)
+        _client = chromadb.PersistentClient(
+            path=CHROMA_DIR,
+            settings=ChromaSettings(anonymized_telemetry=False),
+        )
+        _collection = _client.get_or_create_collection(
+            name=COLLECTION_NAME,
+            metadata={"hnsw:space": "cosine"},
+        )
+    return _collection
+
+
+def embed(texts: list[str]) -> list[list[float]]:
+    embedder = _get_embedder()
+    return embedder.encode(texts, show_progress_bar=False).tolist()
+
+
+def add_chunks(doc_id: str, chunks: list[dict]) -> int:
+    """Add document chunks to the vector store. Returns number of chunks added."""
+    if not chunks:
+        return 0
+
+    collection = _get_collection()
+    texts = [c["text"] for c in chunks]
+    embeddings = embed(texts)
+
+    ids = [f"{doc_id}_{i}" for i in range(len(chunks))]
+    metadatas = []
+    for c in chunks:
+        meta = {k: str(v) for k, v in c.get("metadata", {}).items()}
+        meta["doc_id"] = doc_id
+        metadatas.append(meta)
+
+    collection.upsert(
+        ids=ids,
+        embeddings=embeddings,
+        documents=texts,
+        metadatas=metadatas,
+    )
+    return len(chunks)
+
+
+def query(query_text: str, n_results: int = 5) -> list[dict]:
+    """Query the vector store and return top-N relevant chunks."""
+    collection = _get_collection()
+    if collection.count() == 0:
+        return []
+
+    query_embedding = embed([query_text])[0]
+    results = collection.query(
+        query_embeddings=[query_embedding],
+        n_results=min(n_results, collection.count()),
+        include=["documents", "metadatas", "distances"],
+    )
+
+    chunks = []
+    for i, doc in enumerate(results["documents"][0]):
+        chunks.append(
+            {
+                "text": doc,
+                "metadata": results["metadatas"][0][i],
+                "distance": results["distances"][0][i],
+            }
+        )
+    return chunks
+
+
+def delete_doc(doc_id: str):
+    """Remove all chunks for a document from the vector store."""
+    collection = _get_collection()
+    collection.delete(where={"doc_id": doc_id})
+
+
+def count() -> int:
+    return _get_collection().count()
+
+
+def content_hash(text: str) -> str:
+    return hashlib.sha256(text.encode()).hexdigest()

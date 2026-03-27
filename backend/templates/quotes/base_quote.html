@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #1a1a1a; background: #fff; }
+
+    .page { max-width: 800px; margin: 0 auto; padding: 48px; }
+
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 48px; padding-bottom: 24px; border-bottom: 2px solid #2563EB; }
+    .company-name { font-size: 24px; font-weight: 700; color: #2563EB; }
+    .quote-meta { text-align: right; font-size: 13px; color: #666; }
+    .quote-meta .quote-id { font-size: 18px; font-weight: 700; color: #1a1a1a; margin-bottom: 4px; }
+
+    .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #999; margin-bottom: 8px; }
+
+    .service-block { background: #f8faff; border-left: 4px solid #2563EB; padding: 20px 24px; margin-bottom: 32px; border-radius: 0 8px 8px 0; }
+    .service-name { font-size: 20px; font-weight: 700; color: #1a1a1a; margin-bottom: 8px; }
+    .service-details { font-size: 14px; color: #555; line-height: 1.7; }
+
+    .price-block { display: flex; align-items: center; justify-content: space-between; background: #2563EB; color: white; padding: 24px 28px; border-radius: 12px; margin-bottom: 40px; }
+    .price-label { font-size: 14px; opacity: 0.85; }
+    .price-value { font-size: 32px; font-weight: 800; }
+    .price-currency { font-size: 18px; font-weight: 400; opacity: 0.85; }
+
+    .no-price { text-align: center; padding: 24px; background: #f8f9fa; border-radius: 8px; color: #666; font-size: 14px; margin-bottom: 40px; }
+
+    .footer { border-top: 1px solid #e5e7eb; padding-top: 24px; display: flex; justify-content: space-between; align-items: center; }
+    .footer-agent { font-size: 14px; color: #555; }
+    .footer-agent strong { color: #1a1a1a; }
+    .footer-note { font-size: 12px; color: #999; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="header">
+      <div class="company-name">{{ business_name }}</div>
+      <div class="quote-meta">
+        <div class="quote-id">Cotización #{{ quote.id[:8].upper() }}</div>
+        <div>{{ quote.created_at.strftime('%d/%m/%Y') if quote.created_at else '' }}</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">Servicio cotizado</div>
+      <div class="service-block">
+        <div class="service-name">{{ quote.service }}</div>
+        {% if quote.details %}
+        <div class="service-details">{{ quote.details }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if quote.total_value %}
+    <div class="price-block">
+      <div>
+        <div class="price-label">Inversión total</div>
+      </div>
+      <div>
+        <span class="price-currency">{{ quote.currency }} </span>
+        <span class="price-value">{{ "{:,.0f}".format(quote.total_value) }}</span>
+      </div>
+    </div>
+    {% else %}
+    <div class="no-price">
+      El precio se coordinará en la reunión de descubrimiento. ¡Agendemos una llamada!
+    </div>
+    {% endif %}
+
+    <div class="footer">
+      <div class="footer-agent">
+        Preparado por <strong>{{ agent_name }}</strong><br>
+        <span style="font-size:12px;color:#999;">{{ business_name }}</span>
+      </div>
+      <div class="footer-note">Esta cotización es válida por 7 días.</div>
+    </div>
+  </div>
+</body>
+</html>

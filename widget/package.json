@@ -1,0 +1,12 @@
+{
+  "name": "sales-agent-widget",
+  "version": "1.0.0",
+  "description": "Embeddable chat widget for the Sales Agent",
+  "scripts": {
+    "build": "node build.js",
+    "dev": "node build.js --watch"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  }
+}

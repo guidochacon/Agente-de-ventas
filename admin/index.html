@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Agente de Ventas</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f8fafc; color: #1a1a1a; }
+    nav { background: #2563EB; color: white; padding: 14px 24px; display: flex; align-items: center; gap: 24px; }
+    nav h1 { font-size: 18px; font-weight: 700; }
+    nav a { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 14px; }
+    nav a:hover { color: white; }
+    .container { max-width: 1100px; margin: 32px auto; padding: 0 24px; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .stat-card { background: white; border-radius: 12px; padding: 20px 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .stat-card .number { font-size: 32px; font-weight: 800; color: #2563EB; }
+    .stat-card .label { font-size: 13px; color: #666; margin-top: 4px; }
+    .card { background: white; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); overflow: hidden; margin-bottom: 24px; }
+    .card-header { padding: 16px 24px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+    .card-header h2 { font-size: 16px; font-weight: 700; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #f8fafc; text-align: left; padding: 10px 16px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #666; border-bottom: 1px solid #e5e7eb; }
+    td { padding: 12px 16px; font-size: 14px; border-bottom: 1px solid #f1f5f9; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8fafc; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .badge-new { background: #dbeafe; color: #1d4ed8; }
+    .badge-contacted { background: #fef3c7; color: #92400e; }
+    .badge-qualified { background: #d1fae5; color: #065f46; }
+    .badge-converted { background: #e0e7ff; color: #3730a3; }
+    .btn { display: inline-block; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; text-decoration: none; }
+    .btn-primary { background: #2563EB; color: white; }
+    .btn-secondary { background: #f1f5f9; color: #333; }
+    .btn:hover { filter: brightness(0.95); }
+    #kb-form { display: flex; gap: 8px; align-items: center; }
+    #kb-url { flex: 1; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; font-size: 14px; }
+    .empty { text-align: center; padding: 40px; color: #999; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <nav>
+    <h1>🤖 Agente de Ventas</h1>
+    <a href="/">Demo</a>
+    <a href="/docs">API Docs</a>
+  </nav>
+
+  <div class="container">
+    <div class="stats">
+      <div class="stat-card">
+        <div class="number" id="stat-leads">—</div>
+        <div class="label">Total Leads</div>
+      </div>
+      <div class="stat-card">
+        <div class="number" id="stat-new">—</div>
+        <div class="label">Leads Nuevos</div>
+      </div>
+      <div class="stat-card">
+        <div class="number" id="stat-kb">—</div>
+        <div class="label">Documentos KB</div>
+      </div>
+      <div class="stat-card">
+        <div class="number" id="stat-vectors">—</div>
+        <div class="label">Vectores</div>
+      </div>
+    </div>
+
+    <!-- Leads -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Leads</h2>
+        <a href="/api/leads/export" class="btn btn-secondary">⬇ Exportar CSV</a>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th><th>Email</th><th>Teléfono</th><th>Estado</th><th>Fecha</th>
+          </tr>
+        </thead>
+        <tbody id="leads-tbody">
+          <tr><td colspan="5" class="empty">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Knowledge Base -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Base de Conocimiento</h2>
+        <form id="kb-form" onsubmit="ingestUrl(event)">
+          <input id="kb-url" type="url" placeholder="https://tusitio.com/servicios" required>
+          <button type="submit" class="btn btn-primary">+ Agregar URL</button>
+        </form>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Nombre</th><th>Tipo</th><th>Chunks</th><th>Fecha</th><th></th></tr>
+        </thead>
+        <tbody id="kb-tbody">
+          <tr><td colspan="5" class="empty">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const API = window.location.origin;
+
+    function badge(status) {
+      const map = { new: 'badge-new', contacted: 'badge-contacted', qualified: 'badge-qualified', converted: 'badge-converted' };
+      return `<span class="badge ${map[status] || 'badge-new'}">${status}</span>`;
+    }
+
+    async function loadLeads() {
+      const r = await fetch(`${API}/api/leads`);
+      const data = await r.json();
+      const leads = data.leads || [];
+      document.getElementById('stat-leads').textContent = data.total;
+      document.getElementById('stat-new').textContent = leads.filter(l => l.status === 'new').length;
+
+      const tbody = document.getElementById('leads-tbody');
+      if (!leads.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty">No hay leads aún</td></tr>';
+        return;
+      }
+      tbody.innerHTML = leads.map(l => `
+        <tr>
+          <td>${l.name || '—'}</td>
+          <td>${l.email || '—'}</td>
+          <td>${l.phone || '—'}</td>
+          <td>${badge(l.status)}</td>
+          <td>${l.created_at ? l.created_at.slice(0, 10) : '—'}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function loadKB() {
+      const r = await fetch(`${API}/api/knowledge`);
+      const data = await r.json();
+      const docs = data.documents || [];
+      document.getElementById('stat-kb').textContent = docs.length;
+      document.getElementById('stat-vectors').textContent = data.total_vectors || 0;
+
+      const tbody = document.getElementById('kb-tbody');
+      if (!docs.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty">No hay documentos. Agrega URLs o PDFs.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = docs.map(d => `
+        <tr>
+          <td>${d.name}</td>
+          <td><span class="badge badge-new">${d.source_type}</span></td>
+          <td>${d.chunk_count}</td>
+          <td>${d.ingested_at ? d.ingested_at.slice(0, 10) : '—'}</td>
+          <td><button class="btn btn-secondary" onclick="deleteDoc('${d.id}')">✕</button></td>
+        </tr>
+      `).join('');
+    }
+
+    async function ingestUrl(e) {
+      e.preventDefault();
+      const url = document.getElementById('kb-url').value;
+      const btn = e.target.querySelector('button');
+      btn.textContent = 'Procesando...';
+      btn.disabled = true;
+      try {
+        const r = await fetch(`${API}/api/knowledge/ingest/url`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        });
+        const data = await r.json();
+        alert(data.message + (data.chunks ? ` (${data.chunks} chunks)` : ''));
+        document.getElementById('kb-url').value = '';
+        loadKB();
+      } catch {
+        alert('Error al ingestar URL');
+      }
+      btn.textContent = '+ Agregar URL';
+      btn.disabled = false;
+    }
+
+    async function deleteDoc(id) {
+      if (!confirm('¿Eliminar este documento de la base de conocimiento?')) return;
+      await fetch(`${API}/api/knowledge/${id}`, { method: 'DELETE' });
+      loadKB();
+    }
+
+    loadLeads();
+    loadKB();
+    setInterval(loadLeads, 30000);
+  </script>
+</body>
+</html>
