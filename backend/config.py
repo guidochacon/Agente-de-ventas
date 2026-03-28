@@ -1,3 +1,4 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List
 
@@ -7,6 +8,11 @@ class Settings(BaseSettings):
 
     # LLM
     anthropic_api_key: str = ""
+
+    @field_validator("anthropic_api_key", mode="before")
+    @classmethod
+    def strip_api_key(cls, v: str) -> str:
+        return v.strip() if isinstance(v, str) else v
     claude_model: str = "claude-sonnet-4-6"
 
     # Scheduling
