@@ -375,7 +375,12 @@ async def debug():
     except Exception as e:
         chroma_status = f"error: {type(e).__name__}: {e}"
 
-    # Raw TCP test to api.anthropic.com:443
+    import ssl, certifi
+
+    # SSL version info
+    ssl_info = ssl.OPENSSL_VERSION
+
+    # Raw TCP (no TLS)
     try:
         reader, writer = await asyncio.wait_for(
             asyncio.open_connection("api.anthropic.com", 443), timeout=10
@@ -386,13 +391,37 @@ async def debug():
     except Exception as e:
         tcp_status = f"error: {type(e).__name__}: {e}"
 
-    # Anthropic API test (with same httpx settings as core.py)
+    # Direct HTTPS with default httpx (no SDK)
+    try:
+        async with httpx.AsyncClient(timeout=10) as hc:
+            r = await hc.get("https://api.anthropic.com")
+            https_default = f"ok (status={r.status_code})"
+    except Exception as e:
+        https_default = f"error: {type(e).__name__}: {e}"
+
+    # Direct HTTPS with certifi + no proxy
+    try:
+        async with httpx.AsyncClient(trust_env=False, verify=certifi.where(), timeout=10) as hc:
+            r = await hc.get("https://api.anthropic.com")
+            https_certifi = f"ok (status={r.status_code})"
+    except Exception as e:
+        https_certifi = f"error: {type(e).__name__}: {e}"
+
+    # Direct HTTPS with verify=False (skip SSL check)
+    try:
+        async with httpx.AsyncClient(verify=False, timeout=10) as hc:
+            r = await hc.get("https://api.anthropic.com")
+            https_nossl = f"ok (status={r.status_code})"
+    except Exception as e:
+        https_nossl = f"error: {type(e).__name__}: {e}"
+
+    # Anthropic SDK test with certifi
     anthropic_status = "not tested"
     if key:
         try:
             http_client = httpx.AsyncClient(
                 trust_env=False,
-                transport=httpx.AsyncHTTPTransport(local_address="0.0.0.0"),
+                verify=certifi.where(),
                 timeout=httpx.Timeout(30.0, connect=10.0),
             )
             client = _anthropic.AsyncAnthropic(api_key=key, http_client=http_client)
@@ -407,8 +436,12 @@ async def debug():
 
     return {
         "api_key": key_status,
+        "ssl": ssl_info,
         "tcp_to_anthropic": tcp_status,
+        "https_default": https_default,
+        "https_certifi": https_certifi,
+        "https_verify_false": https_nossl,
         "chroma": chroma_status,
-        "anthropic": anthropic_status,
+        "anthropic_sdk": anthropic_status,
         "model": settings.claude_model,
     }

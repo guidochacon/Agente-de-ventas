@@ -16,11 +16,10 @@ _client = None
 def get_client() -> anthropic.AsyncAnthropic:
     global _client
     if _client is None:
-        # trust_env=False: ignore HTTP_PROXY / HTTPS_PROXY env vars (common issue on cloud)
-        # local_address="0.0.0.0": force IPv4 (avoids IPv6 connectivity issues on some hosts)
+        import certifi
         http_client = httpx.AsyncClient(
             trust_env=False,
-            transport=httpx.AsyncHTTPTransport(local_address="0.0.0.0"),
+            verify=certifi.where(),
             timeout=httpx.Timeout(60.0, connect=15.0),
         )
         _client = anthropic.AsyncAnthropic(
