@@ -2,22 +2,21 @@ import os
 import hashlib
 import chromadb
 from chromadb.config import Settings as ChromaSettings
-from sentence_transformers import SentenceTransformer
+from chromadb.utils import embedding_functions
 
 CHROMA_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "chroma")
 COLLECTION_NAME = "sales_knowledge"
-EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 
 _client: chromadb.ClientAPI | None = None
 _collection: chromadb.Collection | None = None
-_embedder: SentenceTransformer | None = None
+_ef: embedding_functions.DefaultEmbeddingFunction | None = None
 
 
-def _get_embedder() -> SentenceTransformer:
-    global _embedder
-    if _embedder is None:
-        _embedder = SentenceTransformer(EMBEDDING_MODEL)
-    return _embedder
+def _get_ef() -> embedding_functions.DefaultEmbeddingFunction:
+    global _ef
+    if _ef is None:
+        _ef = embedding_functions.DefaultEmbeddingFunction()
+    return _ef
 
 
 def _get_collection() -> chromadb.Collection:
@@ -30,14 +29,14 @@ def _get_collection() -> chromadb.Collection:
         )
         _collection = _client.get_or_create_collection(
             name=COLLECTION_NAME,
+            embedding_function=_get_ef(),
             metadata={"hnsw:space": "cosine"},
         )
     return _collection
 
 
 def embed(texts: list[str]) -> list[list[float]]:
-    embedder = _get_embedder()
-    return embedder.encode(texts, show_progress_bar=False).tolist()
+    return list(_get_ef()(texts))
 
 
 def add_chunks(doc_id: str, chunks: list[dict]) -> int:
