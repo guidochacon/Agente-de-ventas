@@ -8,9 +8,9 @@ _default_data = os.path.join(os.path.dirname(__file__), "..", "data")
 CHROMA_DIR = os.path.join(os.environ.get("DATA_DIR", _default_data), "chroma")
 COLLECTION_NAME = "sales_knowledge"
 
-_client: chromadb.ClientAPI | None = None
-_collection: chromadb.Collection | None = None
-_ef: embedding_functions.DefaultEmbeddingFunction | None = None
+_client = None
+_collection = None
+_ef = None
 
 
 def _get_ef() -> embedding_functions.DefaultEmbeddingFunction:
