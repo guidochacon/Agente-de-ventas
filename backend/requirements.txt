@@ -6,7 +6,7 @@ pydantic-settings==2.6.1
 python-dotenv==1.0.1
 
 # Claude API
-anthropic==0.49.0
+anthropic==0.86.0
 
 # RAG / Vector Store
 chromadb==0.6.3
