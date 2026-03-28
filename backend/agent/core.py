@@ -5,7 +5,7 @@ Handles tool use, streaming, and conversation history.
 import anthropic
 from typing import AsyncIterator
 from config import settings
-from agent.prompts import build_system_prompt
+from agent.prompts import build_system_prompt, build_coach_prompt
 from agent.tools import TOOLS, execute_tool
 from rag.retriever import retrieve
 
@@ -24,6 +24,7 @@ async def stream_response(
     history: list[dict],
     session_id: str,
     db=None,
+    mode: str | None = None,
 ) -> AsyncIterator[str]:
     """
     Process a user message and stream the agent's response.
@@ -39,12 +40,15 @@ async def stream_response(
     # Retrieve relevant context from knowledge base
     kb_context = retrieve(user_message, n_results=5)
 
-    system_prompt = build_system_prompt(
-        agent_name=settings.agent_name,
-        business_name=settings.agent_business_name,
-        collect_lead_after_messages=settings.collect_lead_after_messages,
-        knowledge_context=kb_context,
-    )
+    if mode:
+        system_prompt = build_coach_prompt(mode=mode, knowledge_context=kb_context)
+    else:
+        system_prompt = build_system_prompt(
+            agent_name=settings.agent_name,
+            business_name=settings.agent_business_name,
+            collect_lead_after_messages=settings.collect_lead_after_messages,
+            knowledge_context=kb_context,
+        )
 
     # Build messages list (history + new user message)
     messages = list(history) + [{"role": "user", "content": user_message}]
