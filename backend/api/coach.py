@@ -66,8 +66,8 @@ async def websocket_coach(
                         assistant_parts.append(token)
                         await websocket.send_text(json.dumps({"type": "token", "text": token}))
             except Exception as e:
-                logger.error(f"stream_response error: {e}\n{traceback.format_exc()}")
-                await websocket.send_text(json.dumps({"type": "error", "message": str(e)}))
+                logger.error(f"stream_response error [{type(e).__name__}]: {e}\n{traceback.format_exc()}")
+                await websocket.send_text(json.dumps({"type": "error", "message": f"[{type(e).__name__}] {e}"}))
                 await websocket.send_text(json.dumps({"type": "end"}))
                 continue
 
