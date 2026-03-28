@@ -415,33 +415,54 @@ async def debug():
     except Exception as e:
         https_nossl = f"error: {type(e).__name__}: {e}"
 
-    # Anthropic SDK test with certifi
-    anthropic_status = "not tested"
-    if key:
+    # Key whitespace check (trailing newline/space can corrupt Authorization header)
+    key_clean = key.strip()
+    key_had_whitespace = key != key_clean
+    key_last_ord = ord(key[-1]) if key else 0
+
+    # Direct POST to /v1/messages via httpx (no SDK) — tests if POST works at all
+    post_status = "not tested"
+    if key_clean:
         try:
-            http_client = httpx.AsyncClient(
-                trust_env=False,
-                verify=certifi.where(),
-                timeout=httpx.Timeout(30.0, connect=10.0),
-            )
-            client = _anthropic.AsyncAnthropic(api_key=key, http_client=http_client)
+            async with httpx.AsyncClient(timeout=15) as hc:
+                r = await hc.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={
+                        "x-api-key": key_clean,
+                        "anthropic-version": "2023-06-01",
+                        "content-type": "application/json",
+                    },
+                    json={"model": "claude-haiku-4-5-20251001", "max_tokens": 5,
+                          "messages": [{"role": "user", "content": "hi"}]},
+                )
+                post_status = f"ok (status={r.status_code})"
+        except Exception as e:
+            post_status = f"error: {type(e).__name__}: {e}"
+
+    # Anthropic SDK — no custom http_client (SDK uses its own defaults)
+    sdk_default = "not tested"
+    if key_clean:
+        try:
+            client = _anthropic.AsyncAnthropic(api_key=key_clean)
             msg = await client.messages.create(
-                model=settings.claude_model,
-                max_tokens=5,
+                model=settings.claude_model, max_tokens=5,
                 messages=[{"role": "user", "content": "hi"}],
             )
-            anthropic_status = f"ok (stop_reason={msg.stop_reason})"
+            sdk_default = f"ok (stop_reason={msg.stop_reason})"
         except Exception as e:
-            anthropic_status = f"error: {type(e).__name__}: {e}"
+            sdk_default = f"error: {type(e).__name__}: {e}"
 
     return {
         "api_key": key_status,
+        "key_had_whitespace": key_had_whitespace,
+        "key_last_char_ord": key_last_ord,
         "ssl": ssl_info,
         "tcp_to_anthropic": tcp_status,
         "https_default": https_default,
         "https_certifi": https_certifi,
         "https_verify_false": https_nossl,
+        "post_to_v1_messages": post_status,
         "chroma": chroma_status,
-        "anthropic_sdk": anthropic_status,
+        "anthropic_sdk_default": sdk_default,
         "model": settings.claude_model,
     }

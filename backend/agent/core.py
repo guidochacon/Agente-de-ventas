@@ -23,7 +23,7 @@ def get_client() -> anthropic.AsyncAnthropic:
             timeout=httpx.Timeout(60.0, connect=15.0),
         )
         _client = anthropic.AsyncAnthropic(
-            api_key=settings.anthropic_api_key,
+            api_key=settings.anthropic_api_key.strip(),
             http_client=http_client,
         )
     return _client
