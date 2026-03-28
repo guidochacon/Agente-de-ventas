@@ -9,7 +9,7 @@ python-dotenv==1.0.1
 anthropic==0.40.0
 
 # RAG / Vector Store
-chromadb==0.5.23
+chromadb==0.6.3
 # sentence-transformers not needed — using chromadb's built-in ONNX embedder
 
 # Document processing
