@@ -2,14 +2,10 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# System deps for chromadb, lxml, weasyprint
-RUN apt-get update -qq && apt-get install -y --no-install-recommends \
+# System deps for chromadb, lxml
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    libpango-1.0-0 \
-    libpangoft2-1.0-0 \
-    libgdk-pixbuf2.0-0 \
     libffi-dev \
-    shared-mime-info \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
