@@ -355,3 +355,42 @@ connect(currentMode);
 @app.get("/health")
 async def health():
     return {"status": "ok", "agent": settings.agent_name}
+
+
+@app.get("/debug")
+async def debug():
+    """Diagnostic endpoint — checks config and connectivity."""
+    import anthropic as _anthropic
+    from rag import vector_store as vs
+
+    # API key status
+    key = settings.anthropic_api_key
+    key_status = "not set" if not key else f"set ({len(key)} chars, starts with {key[:8]}...)"
+
+    # ChromaDB status
+    try:
+        count = vs.count()
+        chroma_status = f"ok ({count} vectors)"
+    except Exception as e:
+        chroma_status = f"error: {type(e).__name__}: {e}"
+
+    # Anthropic API test
+    anthropic_status = "not tested"
+    if key:
+        try:
+            client = _anthropic.AsyncAnthropic(api_key=key)
+            msg = await client.messages.create(
+                model=settings.claude_model,
+                max_tokens=5,
+                messages=[{"role": "user", "content": "hi"}],
+            )
+            anthropic_status = f"ok (stop_reason={msg.stop_reason})"
+        except Exception as e:
+            anthropic_status = f"error: {type(e).__name__}: {e}"
+
+    return {
+        "api_key": key_status,
+        "chroma": chroma_status,
+        "anthropic": anthropic_status,
+        "model": settings.claude_model,
+    }
