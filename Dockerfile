@@ -22,7 +22,7 @@ RUN chmod +x start.sh
 
 # Ingest knowledge base at build time — data is baked into the image,
 # instantly available at runtime with no event loop blocking
-RUN cd /app/backend && python scripts/ingest_all.py
+RUN cd /app/backend && python -u scripts/ingest_all.py
 
 EXPOSE 8000
 CMD ["bash", "start.sh"]
