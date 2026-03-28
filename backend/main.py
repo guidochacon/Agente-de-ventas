@@ -126,7 +126,7 @@ async def coach_page(pw: str = ""):
   button:hover{background:#1d4ed8}
 </style></head>
 <body><div class="box">
-  <h2>Coach IA</h2><p>Scaling In Blue · Acceso exclusivo para alumnos</p>
+  <h2>Coach IA</h2><p>Guido Chacón · Acceso exclusivo para alumnos</p>
   <input type="password" id="pw" placeholder="Contraseña" onkeydown="if(event.key==='Enter')go()">
   <button onclick="go()">Entrar</button>
 </div>
@@ -138,7 +138,7 @@ async def coach_page(pw: str = ""):
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Coach IA — Scaling In Blue</title>
+  <title>Coach IA — Guido Chacón</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; height: 100dvh; display: flex; flex-direction: column; }
@@ -202,7 +202,7 @@ async def coach_page(pw: str = ""):
 
 <header>
   <div>
-    <h1>Coach IA · Scaling In Blue</h1>
+    <h1>Coach IA · Guido Chacón</h1>
     <span>Powered by tu knowledge base de llamadas reales</span>
   </div>
 </header>
