@@ -1,4 +1,6 @@
 import os
+import asyncio
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,11 +16,31 @@ from api.knowledge import router as knowledge_router
 from api.quotes import router as quotes_router
 from api.scheduling import router as scheduling_router
 
+logger = logging.getLogger(__name__)
+
+
+async def _run_ingest():
+    """Run knowledge base ingestion in the background after startup."""
+    try:
+        import subprocess, sys
+        logger.info("Starting knowledge base ingestion in background...")
+        result = subprocess.run(
+            [sys.executable, "scripts/ingest_all.py"],
+            capture_output=True, text=True, timeout=300
+        )
+        if result.returncode == 0:
+            logger.info(f"Ingest complete:\n{result.stdout}")
+        else:
+            logger.error(f"Ingest failed:\n{result.stderr}")
+    except Exception as e:
+        logger.error(f"Ingest error: {e}")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
+    # Startup: init DB, then kick off ingest in background so health check passes immediately
     await init_db()
+    asyncio.create_task(_run_ingest())
     yield
     # Shutdown
 
