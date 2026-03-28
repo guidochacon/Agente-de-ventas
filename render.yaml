@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: scaling-in-blue-coach
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: AGENT_NAME
+        value: Guido
+      - key: AGENT_BUSINESS_NAME
+        value: Scaling In Blue
+      - key: AGENT_WELCOME_MESSAGE
+        value: "¡Hola! Soy el asistente de Scaling In Blue. ¿Sos arquitecto y querés conseguir más clientes? Contame tu situación."
+      - key: COLLECT_LEAD_AFTER_MESSAGES
+        value: "3"
+      - key: COACH_PASSWORD
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
