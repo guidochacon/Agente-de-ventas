@@ -112,7 +112,27 @@ async def admin_page():
 
 
 @app.get("/coach", response_class=HTMLResponse)
-async def coach_page():
+async def coach_page(pw: str = ""):
+    if settings.coach_password and pw != settings.coach_password:
+        return HTMLResponse("""<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><title>Coach IA</title>
+<style>
+  body{font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0;display:flex;align-items:center;justify-content:center;height:100dvh;margin:0}
+  .box{background:#1e293b;padding:40px;border-radius:16px;text-align:center;width:320px}
+  h2{margin-bottom:8px;color:#f1f5f9}p{color:#64748b;font-size:14px;margin-bottom:24px}
+  input{width:100%;padding:10px 14px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:15px;margin-bottom:12px;box-sizing:border-box}
+  button{width:100%;padding:10px;background:#2563eb;border:none;border-radius:8px;color:#fff;font-size:15px;cursor:pointer;font-weight:500}
+  button:hover{background:#1d4ed8}
+</style></head>
+<body><div class="box">
+  <h2>Coach IA</h2><p>Scaling In Blue · Acceso exclusivo para alumnos</p>
+  <input type="password" id="pw" placeholder="Contraseña" onkeydown="if(event.key==='Enter')go()">
+  <button onclick="go()">Entrar</button>
+</div>
+<script>function go(){const p=document.getElementById('pw').value;if(p)location.href='/coach?pw='+encodeURIComponent(p);}</script>
+</body></html>""", status_code=401)
+    coach_password_js = f'"{settings.coach_password}"' if settings.coach_password else '""'
     return """<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -212,6 +232,8 @@ const HINTS = {
   practice: "Practicá tu cierre. Yo juego de prospecto con dudas reales. Empezá la llamada cuando quieras.",
 };
 
+const COACH_PW = """ + coach_password_js + """;
+
 let ws = null;
 let currentMode = "consult";
 let sessionId = "coach-" + Math.random().toString(36).slice(2);
@@ -229,7 +251,8 @@ function setHint(mode) {
 function connect(mode) {
   if (ws) { ws.onclose = null; ws.close(); }
   const proto = location.protocol === "https:" ? "wss" : "ws";
-  ws = new WebSocket(`${proto}://${location.host}/api/coach/${sessionId}?mode=${mode}`);
+  const pwParam = COACH_PW ? `&pw=${encodeURIComponent(COACH_PW)}` : "";
+  ws = new WebSocket(`${proto}://${location.host}/api/coach/${sessionId}?mode=${mode}${pwParam}`);
 
   ws.onmessage = (e) => {
     const msg = JSON.parse(e.data);

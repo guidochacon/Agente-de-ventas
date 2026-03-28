@@ -4,7 +4,8 @@ import chromadb
 from chromadb.config import Settings as ChromaSettings
 from chromadb.utils import embedding_functions
 
-CHROMA_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "chroma")
+_default_data = os.path.join(os.path.dirname(__file__), "..", "data")
+CHROMA_DIR = os.path.join(os.environ.get("DATA_DIR", _default_data), "chroma")
 COLLECTION_NAME = "sales_knowledge"
 
 _client: chromadb.ClientAPI | None = None

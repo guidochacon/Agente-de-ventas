@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     admin_username: str = "admin"
     admin_password: str = "admin"
 
+    # Coach access
+    coach_password: str = ""  # Empty = no password required
+
     # Agent Persona
     agent_name: str = "Alex"
     agent_business_name: str = "Nuestra Empresa"
