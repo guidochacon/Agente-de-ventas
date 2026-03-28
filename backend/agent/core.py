@@ -3,19 +3,30 @@ AgentCore: orchestrates the conversation loop with Claude API.
 Handles tool use, streaming, and conversation history.
 """
 import anthropic
+import httpx
 from typing import AsyncIterator
 from config import settings
 from agent.prompts import build_system_prompt, build_coach_prompt
 from agent.tools import TOOLS, execute_tool
 from rag.retriever import retrieve
 
-_client: anthropic.AsyncAnthropic | None = None
+_client = None
 
 
 def get_client() -> anthropic.AsyncAnthropic:
     global _client
     if _client is None:
-        _client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+        # trust_env=False: ignore HTTP_PROXY / HTTPS_PROXY env vars (common issue on cloud)
+        # local_address="0.0.0.0": force IPv4 (avoids IPv6 connectivity issues on some hosts)
+        http_client = httpx.AsyncClient(
+            trust_env=False,
+            transport=httpx.AsyncHTTPTransport(local_address="0.0.0.0"),
+            timeout=httpx.Timeout(60.0, connect=15.0),
+        )
+        _client = anthropic.AsyncAnthropic(
+            api_key=settings.anthropic_api_key,
+            http_client=http_client,
+        )
     return _client
 
 

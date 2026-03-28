@@ -360,25 +360,42 @@ async def health():
 @app.get("/debug")
 async def debug():
     """Diagnostic endpoint — checks config and connectivity."""
+    import asyncio
     import anthropic as _anthropic
+    import httpx
     from rag import vector_store as vs
 
-    # API key status
     key = settings.anthropic_api_key
     key_status = "not set" if not key else f"set ({len(key)} chars, starts with {key[:8]}...)"
 
-    # ChromaDB status
+    # ChromaDB
     try:
         count = vs.count()
         chroma_status = f"ok ({count} vectors)"
     except Exception as e:
         chroma_status = f"error: {type(e).__name__}: {e}"
 
-    # Anthropic API test
+    # Raw TCP test to api.anthropic.com:443
+    try:
+        reader, writer = await asyncio.wait_for(
+            asyncio.open_connection("api.anthropic.com", 443), timeout=10
+        )
+        writer.close()
+        await writer.wait_closed()
+        tcp_status = "ok"
+    except Exception as e:
+        tcp_status = f"error: {type(e).__name__}: {e}"
+
+    # Anthropic API test (with same httpx settings as core.py)
     anthropic_status = "not tested"
     if key:
         try:
-            client = _anthropic.AsyncAnthropic(api_key=key)
+            http_client = httpx.AsyncClient(
+                trust_env=False,
+                transport=httpx.AsyncHTTPTransport(local_address="0.0.0.0"),
+                timeout=httpx.Timeout(30.0, connect=10.0),
+            )
+            client = _anthropic.AsyncAnthropic(api_key=key, http_client=http_client)
             msg = await client.messages.create(
                 model=settings.claude_model,
                 max_tokens=5,
@@ -390,6 +407,7 @@ async def debug():
 
     return {
         "api_key": key_status,
+        "tcp_to_anthropic": tcp_status,
         "chroma": chroma_status,
         "anthropic": anthropic_status,
         "model": settings.claude_model,
