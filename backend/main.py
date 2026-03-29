@@ -196,6 +196,20 @@ async def coach_page(pw: str = ""):
     button#send:hover { background: #1d4ed8; }
     button#send:disabled { background: #334155; cursor: default; }
     button#send svg { width: 18px; height: 18px; }
+
+    .btn-clear {
+      background: transparent; border: 1px solid #334155; color: #64748b;
+      border-radius: 8px; padding: 4px 12px; font-size: 12px; cursor: pointer;
+      transition: all .15s; white-space: nowrap;
+    }
+    .btn-clear:hover { border-color: #ef4444; color: #f87171; }
+    .history-divider {
+      text-align: center; font-size: 11px; color: #334155; margin: 4px 0;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .history-divider::before, .history-divider::after {
+      content: ""; flex: 1; height: 1px; background: #1e293b;
+    }
   </style>
 </head>
 <body>
@@ -212,7 +226,10 @@ async def coach_page(pw: str = ""):
   <button class="mode-btn active" data-mode="consult">Consultar técnica</button>
   <button class="mode-btn" data-mode="practice">Practicar cierre</button>
 </div>
-<div class="mode-hint" id="hint"></div>
+<div class="mode-hint" id="hint" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+  <span id="hint-text"></span>
+  <button class="btn-clear" id="btn-clear" style="display:none">Limpiar historial</button>
+</div>
 
 <div class="messages" id="messages"></div>
 
@@ -234,18 +251,80 @@ const HINTS = {
 
 const COACH_PW = """ + coach_password_js + """;
 
+// --- localStorage helpers ---
+function storageKey(mode) { return "coach_history_" + mode; }
+function sidKey(mode)     { return "coach_sid_" + mode; }
+
+function loadHistory(mode) {
+  try {
+    const raw = localStorage.getItem(storageKey(mode));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    localStorage.removeItem(storageKey(mode));
+    return [];
+  }
+}
+
+function saveHistory(mode, history) {
+  try {
+    localStorage.setItem(storageKey(mode), JSON.stringify(history));
+  } catch (e) {
+    if (e.name === "QuotaExceededError" || e.code === 22) {
+      const trimmed = history.slice(-30);
+      try { localStorage.setItem(storageKey(mode), JSON.stringify(trimmed)); } catch (_) {}
+    }
+  }
+}
+
+function getOrCreateSid(mode) {
+  let sid = localStorage.getItem(sidKey(mode));
+  if (!sid) {
+    sid = "coach-" + Math.random().toString(36).slice(2);
+    localStorage.setItem(sidKey(mode), sid);
+  }
+  return sid;
+}
+
 let ws = null;
 let currentMode = "consult";
-let sessionId = "coach-" + Math.random().toString(36).slice(2);
+let sessionId = getOrCreateSid(currentMode);
 let responding = false;
+let _history = loadHistory(currentMode);
+let _agentBuf = "";
 
 const messagesEl = document.getElementById("messages");
-const inputEl = document.getElementById("input");
-const sendBtn = document.getElementById("send");
-const hintEl = document.getElementById("hint");
+const inputEl    = document.getElementById("input");
+const sendBtn    = document.getElementById("send");
+const hintTextEl = document.getElementById("hint-text");
+const clearBtn   = document.getElementById("btn-clear");
 
 function setHint(mode) {
-  hintEl.textContent = HINTS[mode] || "";
+  hintTextEl.textContent = HINTS[mode] || "";
+}
+
+function updateClearBtn() {
+  clearBtn.style.display = _history.length > 0 ? "inline-block" : "none";
+}
+
+function renderHistory(history) {
+  messagesEl.innerHTML = "";
+  if (history.length === 0) return;
+  const divider = document.createElement("div");
+  divider.className = "history-divider";
+  divider.textContent = "— Conversación anterior —";
+  messagesEl.appendChild(divider);
+  history.forEach(({ role, text }) => {
+    const div = document.createElement("div");
+    div.className = "msg " + role;
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.textContent = text;
+    div.appendChild(bubble);
+    messagesEl.appendChild(div);
+  });
+  messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
 function connect(mode) {
@@ -257,13 +336,22 @@ function connect(mode) {
   ws.onmessage = (e) => {
     const msg = JSON.parse(e.data);
     if (msg.type === "start") {
+      _agentBuf = "";
       addAgentBubble("");
     } else if (msg.type === "token") {
+      _agentBuf += msg.text;
       appendToLastBubble(msg.text);
     } else if (msg.type === "end") {
+      if (_agentBuf) {
+        _history.push({ role: "agent", text: _agentBuf });
+        saveHistory(currentMode, _history);
+        updateClearBtn();
+      }
+      _agentBuf = "";
       setResponding(false);
     } else if (msg.type === "error") {
       appendToLastBubble("\\n[Error: " + msg.message + "]");
+      _agentBuf = "";
       setResponding(false);
     }
   };
@@ -275,10 +363,12 @@ function connect(mode) {
 
 function setMode(mode) {
   currentMode = mode;
-  sessionId = "coach-" + Math.random().toString(36).slice(2);
+  sessionId   = getOrCreateSid(mode);
+  _history    = loadHistory(mode);
   document.querySelectorAll(".mode-btn").forEach(b => b.classList.toggle("active", b.dataset.mode === mode));
   setHint(mode);
-  messagesEl.innerHTML = "";
+  renderHistory(_history);
+  updateClearBtn();
   connect(mode);
 }
 
@@ -324,12 +414,26 @@ function send() {
   if (!ws || ws.readyState !== WebSocket.OPEN) { alert("Conectando, esperá un momento..."); return; }
 
   addUserBubble(text);
+  _history.push({ role: "user", text });
+  saveHistory(currentMode, _history);
+  updateClearBtn();
+
   inputEl.value = "";
   inputEl.style.height = "auto";
   setResponding(true);
-
   ws.send(JSON.stringify({ message: text }));
 }
+
+clearBtn.addEventListener("click", () => {
+  if (!confirm("¿Borrar el historial de este modo? Esta acción no se puede deshacer.")) return;
+  _history = [];
+  saveHistory(currentMode, _history);
+  localStorage.removeItem(sidKey(currentMode));
+  sessionId = getOrCreateSid(currentMode);
+  messagesEl.innerHTML = "";
+  updateClearBtn();
+  connect(currentMode);
+});
 
 sendBtn.addEventListener("click", send);
 inputEl.addEventListener("keydown", (e) => {
@@ -346,6 +450,8 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
 // Init
 setHint(currentMode);
+renderHistory(_history);
+updateClearBtn();
 connect(currentMode);
 </script>
 </body>
