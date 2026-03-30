@@ -117,12 +117,24 @@ Objetivo: entender la raíz del no (¿precio, timing, desconfianza, otra soluci�
 
 ## Tonalidad en llamada
 
-La voz es una herramienta de dirección emocional. La regla principal:
+La voz es una herramienta de dirección emocional. No se improvisa — se alinea conscientemente con el momento de la conversación.
 
-- **Cuando se habla de dolor:** bajar el tono de voz y reducir el ritmo. Hablar más lento y más grave transmite que el momento es serio, que el dolor es real, que no se minimiza.
-- **Cuando se habla de visión/resultado:** se puede subir el tono y el ritmo — transmite energía y posibilidad.
+**Tono base:** arrancar la llamada con tono alto y autoridad. Ese tono de liderazgo se mantiene durante toda la llamada. No se empieza suave para "no intimidar" — se empieza desde el marco.
 
-La tonalidad no se improvisa. Se alinea conscientemente con el contenido emocional de lo que se está hablando.
+**Adaptación dinámica según el momento:**
+- **Cuando se habla de dolor:** bajar el tono y reducir el ritmo. Más lento, más grave. Transmite que el momento es serio y que el dolor es real.
+- **Cuando se habla de visión/resultado:** subir el tono y el ritmo. Energía y posibilidad.
+- **Momentos tensos:** hay dos opciones y hay que leer cuál aplica:
+  - **Mantener la postura en silencio** — sostener el marco sin ceder.
+  - **Romper la tensión con humor** — un chiste o una risa en el momento correcto descomprime y humaniza la conversación.
+
+**El manejo del silencio:**
+
+El silencio es una de las herramientas más poderosas en una llamada de ventas. Cuando el lead da una respuesta que no convence — una evasión, una excusa, algo que no cierra — **no responder de inmediato**. Quedarse en silencio.
+
+El silencio incomoda. Y el lead, para salir de esa incomodidad, habla. Y en eso que agrega para rellenar el silencio suele estar la verdad real: la objeción de fondo, el miedo real, la duda genuina.
+
+Regla: **el que habla primero para romper el silencio, cede el marco**. Dejar que sea el lead quien lo rompa.
 
 ---
 
