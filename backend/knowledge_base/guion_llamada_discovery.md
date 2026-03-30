@@ -91,10 +91,25 @@ Objetivo: activar aversión a la pérdida. El dolor de quedarse igual tiene que 
 
 ---
 
+### 8. Pre-cierre — Dos preguntas antes del precio
+
+Antes de revelar el precio, se hacen dos preguntas que buscan obtener un doble "sí" de valor. El lead tiene que comprometerse con la solución antes de escuchar el número. Así el precio se evalúa sobre una base de valor confirmado, no sobre el vacío.
+
+**Pregunta 1 — Alineación con el objetivo:**
+> "¿Sentís que va alineado con lo que buscás resolver hoy?"
+
+**Pregunta 2 — Eliminar la duda sobre el resultado:**
+> "¿Ves alguna manera en que, acompañándote con las herramientas e información, no logres el objetivo que me dijiste?"
+
+Objetivo: que el lead diga en voz alta que la solución tiene sentido y que no ve por qué no funcionaría. Después de ese doble sí, el precio es el último paso — no el primer obstáculo.
+
+---
+
 ## Flujo completo resumido
 
 | Etapa | Pregunta clave | Objetivo |
 |-------|---------------|----------|
+| Saludo | ¿Cómo estás? | Breve, ir directo |
 | Apertura | ¿Qué buscás específicamente? | Motivo emocional + lógico |
 | Diagnóstico | ¿Qué estás haciendo hoy? | Exponer la brecha |
 | Tiempo de intento | ¿Cuánto tiempo llevás intentando? | Amplificar el dolor |
@@ -102,6 +117,8 @@ Objetivo: activar aversión a la pérdida. El dolor de quedarse igual tiene que 
 | Visualización | Imaginá cuando logrés XYZ... | Activar la visión del resultado |
 | Check de realidad | Sin cambio, nada cambia | Anclar en el presente |
 | Costo de inacción | ¿Cómo se ve el negocio sin cambiar? | Aversión a la pérdida |
+| Pre-cierre | ¿Lo ves alineado? ¿Ves por qué no funcionaría? | Doble sí de valor antes del precio |
+| Precio | Revelar inversión | Sobre base de valor ya confirmado |
 
 ---
 
