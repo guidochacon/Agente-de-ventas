@@ -7,6 +7,12 @@
 
 ## Estructura de la llamada
 
+### 0. Saludo inicial — Breve y directo
+
+Preguntar cómo está la persona (máximo 1-2 intercambios), e ir directo a la pregunta de apertura. No hay rapport extendido — el rapport se construye en el proceso, no antes.
+
+---
+
 ### 1. Apertura — Motivo real de la llamada
 
 > "¿Qué estás buscando ESPECÍFICAMENTE con lo que nosotros hacemos?"
@@ -99,9 +105,19 @@ Objetivo: activar aversión a la pérdida. El dolor de quedarse igual tiene que 
 
 ---
 
+## Manejo del "No" definitivo
+
+Cuando el lead dice que no de forma definitiva, no se presiona ni se hace seguimiento activo. Solo se indaga el motivo:
+
+> "¿Puedo preguntarte por qué tomaste esa decisión?"
+
+Objetivo: entender la raíz del no (¿precio, timing, desconfianza, otra solución?). Esa información sirve para mejorar el proceso, y en algunos casos el lead se reabre cuando verbaliza su razonamiento.
+
+---
+
 ## Principios clave del guion
 
 - **70% escuchar, 30% hablar.** El lead debe hablar más que vos.
 - **No explicar la solución antes de amplificar el dolor.** Primero duele, después alivia.
 - **Usar las palabras exactas del lead.** No reformular — reflejar.
-- **El guion se adapta al servicio.** X, Y, Z son los resultados específicos del producto que se vende.
+- **El guion se adapta a cualquier servicio o nicho.** X, Y, Z son los resultados específicos del producto que se vende. El closer reemplaza esas variables según la oferta del cliente.
