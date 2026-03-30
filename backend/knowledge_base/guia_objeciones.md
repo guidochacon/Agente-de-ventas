@@ -150,7 +150,20 @@ Ej: "No sé si estoy preparado", "Yo no soy tan disciplinado".
 | Vender desde la necesidad | Se nota la ansiedad | Tu calma genera confianza |
 | Esperar que decida solo | El lead se pierde | Cerrá con dirección: "Demos el siguiente paso" |
 
-## 6. Clave final
+## 6. Objeción de cuotas / "No tengo la plata junta"
+
+Cuando el lead pide cuotas o dice que no tiene el dinero disponible, no se trata de una objeción de precio — se trata de una objeción económica que hay que diagnosticar.
+
+**Regla:** manejar igual que la objeción de dinero. Primero entender el contexto real detrás del pedido:
+- ¿Es falta de liquidez momentánea (limitante logístico)?
+- ¿Es desconfianza en que va a recuperar la inversión (limitante emocional)?
+- ¿Es que el valor no está claro todavía?
+
+Dependiendo del contexto, se aplica el framework de la objeción económica correspondiente.
+
+---
+
+## 7. Clave final
 
 Manejar objeciones no es "cerrar ventas", es ayudar al otro a decidir sin miedo.
 Cada objeción es una oportunidad para demostrar seguridad, empatía y liderazgo.
