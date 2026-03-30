@@ -67,6 +67,32 @@ Dar por terminada la llamada. Un lead que no deja diagnosticar, no va a comprar.
 
 ---
 
+## Recuperar el Marco Cuando el Lead Toma el Control
+
+Cuando el lead empieza a hacer preguntas para controlar la dirección de la llamada, la respuesta nunca es confrontar ni ceder — es redirigir con calma.
+
+**Técnica: Push and Pull con preguntas**
+
+Dos variantes según el momento:
+
+**Opción A — Responder con una pregunta:**
+El lead pregunta → vos preguntás de vuelta. No respondés directamente, devolvés el control con curiosidad.
+
+> Lead: "¿Cuánto cuesta?"
+> Closer: "Buena pregunta — antes de hablar de números, contame: ¿cuánto te está costando hoy no tener esto resuelto?"
+
+**Opción B — Responder y redirigir:**
+Responder brevemente la pregunta del lead y de inmediato hacer una pregunta que devuelva la dirección.
+
+> Lead: "¿Cuánto tiempo lleva ver resultados?"
+> Closer: "Depende del punto de partida de cada uno. Por eso te pregunto — ¿cuánto tiempo llevás vos intentando resolver esto?"
+
+**Principio:** la calma es el marco. Quien mantiene la calma dirige. El lead que hace preguntas no tiene el control — solo lo cree. Con una pregunta bien hecha, el foco vuelve al proceso.
+
+No es necesario forzar nada. La redirección es suave, natural y constante.
+
+---
+
 ## Reset Mental Después de una Llamada Perdida
 
 Una llamada que sale mal no puede contaminar la siguiente. El estado mental es el recurso más valioso de un closer.
