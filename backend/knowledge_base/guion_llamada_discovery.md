@@ -132,6 +132,19 @@ Objetivo: entender la raíz del no (¿precio, timing, desconfianza, otra soluci�
 
 ---
 
+## Prueba social
+
+**Pre-llamada:** enviar casos de éxito al lead antes de la llamada. Llega con referencias, no en frío.
+
+**Durante la llamada:** usar cuando el lead da pie — cuando menciona un problema, una duda, o una situación similar a la de un cliente anterior.
+
+No forzar la historia. Esperar el momento orgánico y conectar:
+> "Me acordás a [cliente] — tenía exactamente eso. Lo que hicimos fue [X] y logró [resultado concreto]."
+
+Breve, específico, con resultado tangible. El caso de éxito no es para impresionar — es para que el lead vea que alguien en su situación ya lo resolvió.
+
+---
+
 ## Tonalidad en llamada
 
 La voz es una herramienta de dirección emocional. No se improvisa — se alinea conscientemente con el momento de la conversación.

@@ -163,7 +163,23 @@ Dependiendo del contexto, se aplica el framework de la objeción económica corr
 
 ---
 
-## 7. Clave final
+## 7. Objeción "Ya lo intenté antes y no funcionó"
+
+Esta objeción viene cargada de escepticismo emocional — el lead fue quemado antes y tiene el escudo arriba.
+
+**El enfoque no es defender. Es diagnosticar:**
+
+> "Contame, ¿qué fue específicamente lo que no funcionó?"
+
+Dejar que cuente. Escuchar sin interrumpir. El objetivo es entender exactamente qué falló — si fue el servicio, la ejecución, el timing, o el propio compromiso del lead.
+
+Con esa información, mostrar en qué es concretamente distinto lo que se ofrece hoy. No comparar genéricamente — señalar el punto exacto de diferencia respecto a lo que falló.
+
+**Principio:** no se trata de convencerlo de que esta vez va a ser distinto. Se trata de que él mismo entienda por qué lo que no funcionó antes no aplica acá.
+
+---
+
+## 8. Clave final
 
 Manejar objeciones no es "cerrar ventas", es ayudar al otro a decidir sin miedo.
 Cada objeción es una oportunidad para demostrar seguridad, empatía y liderazgo.
