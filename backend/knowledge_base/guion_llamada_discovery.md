@@ -115,6 +115,17 @@ Objetivo: entender la raíz del no (¿precio, timing, desconfianza, otra soluci�
 
 ---
 
+## Tonalidad en llamada
+
+La voz es una herramienta de dirección emocional. La regla principal:
+
+- **Cuando se habla de dolor:** bajar el tono de voz y reducir el ritmo. Hablar más lento y más grave transmite que el momento es serio, que el dolor es real, que no se minimiza.
+- **Cuando se habla de visión/resultado:** se puede subir el tono y el ritmo — transmite energía y posibilidad.
+
+La tonalidad no se improvisa. Se alinea conscientemente con el contenido emocional de lo que se está hablando.
+
+---
+
 ## Principios clave del guion
 
 - **70% escuchar, 30% hablar.** El lead debe hablar más que vos.

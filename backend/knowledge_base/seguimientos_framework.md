@@ -154,6 +154,14 @@ Cuando hacés seguimiento solo porque querés cerrar, el otro lo siente. Tu rol 
 
 ---
 
+## Reactivación de leads fríos (30-90 días sin respuesta)
+
+Cuando un lead completó los 7 follow-ups sin responder y pasaron semanas o meses, el canal de mensajes ya está agotado. La acción es **llamar directamente por teléfono**.
+
+La llamada no es para vender. Es para retomar el vínculo y entender qué pasó.
+
+---
+
 ## Conclusión: El seguimiento como reflejo de carácter
 
 El seguimiento no empieza cuando mandás un mensaje. Empieza en la llamada, cuando sembrás tanto valor, tanta dirección, tanto respeto, que seguir en contacto es lo natural.
