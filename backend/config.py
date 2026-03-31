@@ -34,6 +34,7 @@ class Settings(BaseSettings):
 
     # Coach access
     coach_password: str = ""  # Empty = no password required
+    coach_daily_limit: int = 30  # Max messages per student per day (0 = unlimited)
 
     # Agent Persona
     agent_name: str = "Alex"

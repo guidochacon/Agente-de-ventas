@@ -5,15 +5,33 @@ Usage: ws://host/api/coach/{session_id}?mode=analyze|practice|consult
 import json
 import traceback
 import logging
+from datetime import date
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 from agent.core import stream_response
+from config import settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 _sessions: dict[str, list[dict]] = {}
+# {session_id: {"2026-03-31": count}}
+_daily_counts: dict[str, dict[str, int]] = {}
 
 VALID_MODES = {"analyze", "practice", "consult"}
+
+
+def _check_and_increment(session_id: str) -> bool:
+    """Returns True if the message is allowed, False if daily limit reached."""
+    limit = settings.coach_daily_limit
+    if limit <= 0:
+        return True
+    today = str(date.today())
+    counts = _daily_counts.setdefault(session_id, {})
+    used = counts.get(today, 0)
+    if used >= limit:
+        return False
+    counts[today] = used + 1
+    return True
 
 
 @router.websocket("/api/coach/{session_id}")
@@ -42,6 +60,14 @@ async def websocket_coach(
                 user_message = data.strip()
 
             if not user_message:
+                continue
+
+            if not _check_and_increment(session_id):
+                limit = settings.coach_daily_limit
+                await websocket.send_text(json.dumps({
+                    "type": "limit_reached",
+                    "limit": limit,
+                }))
                 continue
 
             logger.info(f"Message received [{mode}]: {user_message[:80]}")

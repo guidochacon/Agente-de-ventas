@@ -133,6 +133,7 @@ async def coach_page(pw: str = ""):
 <script>function go(){const p=document.getElementById('pw').value;if(p)location.href='/coach?pw='+encodeURIComponent(p);}</script>
 </body></html>""", status_code=401)
     coach_password_js = f'"{settings.coach_password}"' if settings.coach_password else '""'
+    coach_daily_limit_js = str(settings.coach_daily_limit)
     return """<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -228,7 +229,10 @@ async def coach_page(pw: str = ""):
 </div>
 <div class="mode-hint" id="hint" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
   <span id="hint-text"></span>
-  <button class="btn-clear" id="btn-clear" style="display:none">Limpiar historial</button>
+  <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+    <span id="msg-counter" style="font-size:11px;color:#475569;display:none"></span>
+    <button class="btn-clear" id="btn-clear" style="display:none">Limpiar historial</button>
+  </div>
 </div>
 
 <div class="messages" id="messages"></div>
@@ -250,6 +254,7 @@ const HINTS = {
 };
 
 const COACH_PW = """ + coach_password_js + """;
+const DAILY_LIMIT = """ + coach_daily_limit_js + """;
 
 // --- localStorage helpers ---
 function storageKey(mode) { return "coach_history_" + mode; }
@@ -294,11 +299,28 @@ let responding = false;
 let _history = loadHistory(currentMode);
 let _agentBuf = "";
 
-const messagesEl = document.getElementById("messages");
-const inputEl    = document.getElementById("input");
-const sendBtn    = document.getElementById("send");
-const hintTextEl = document.getElementById("hint-text");
-const clearBtn   = document.getElementById("btn-clear");
+const messagesEl  = document.getElementById("messages");
+const inputEl     = document.getElementById("input");
+const sendBtn     = document.getElementById("send");
+const hintTextEl  = document.getElementById("hint-text");
+const clearBtn    = document.getElementById("btn-clear");
+const counterEl   = document.getElementById("msg-counter");
+
+function todayKey() { return "coach_used_" + new Date().toISOString().slice(0,10); }
+function getDailyUsed() { return parseInt(localStorage.getItem(todayKey()) || "0"); }
+function incrementDailyUsed() { localStorage.setItem(todayKey(), getDailyUsed() + 1); }
+
+function updateCounter() {
+  if (DAILY_LIMIT <= 0) return;
+  const used = getDailyUsed();
+  const left = Math.max(0, DAILY_LIMIT - used);
+  counterEl.textContent = left + " mensajes hoy";
+  counterEl.style.display = "inline";
+  counterEl.style.color = left <= 5 ? "#f87171" : "#475569";
+  sendBtn.disabled = left === 0 || responding;
+  inputEl.disabled = left === 0;
+  if (left === 0) inputEl.placeholder = "Límite diario alcanzado. Volvé mañana.";
+}
 
 function setHint(mode) {
   hintTextEl.textContent = HINTS[mode] || "";
@@ -335,7 +357,10 @@ function connect(mode) {
 
   ws.onmessage = (e) => {
     const msg = JSON.parse(e.data);
-    if (msg.type === "start") {
+    if (msg.type === "limit_reached") {
+      updateCounter();
+      setResponding(false);
+    } else if (msg.type === "start") {
       _agentBuf = "";
       addAgentBubble("");
     } else if (msg.type === "token") {
@@ -349,6 +374,7 @@ function connect(mode) {
       }
       _agentBuf = "";
       setResponding(false);
+      updateCounter();
     } else if (msg.type === "error") {
       appendToLastBubble("\\n[Error: " + msg.message + "]");
       _agentBuf = "";
@@ -418,6 +444,8 @@ function send() {
   saveHistory(currentMode, _history);
   updateClearBtn();
 
+  incrementDailyUsed();
+  updateCounter();
   inputEl.value = "";
   inputEl.style.height = "auto";
   setResponding(true);
@@ -452,6 +480,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 setHint(currentMode);
 renderHistory(_history);
 updateClearBtn();
+updateCounter();
 connect(currentMode);
 </script>
 </body>
