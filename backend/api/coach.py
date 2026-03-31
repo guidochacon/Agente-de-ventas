@@ -77,8 +77,8 @@ async def websocket_coach(
             _sessions[session_key].append({"role": "user", "content": user_message})
             _sessions[session_key].append({"role": "assistant", "content": full_response})
 
-            if len(_sessions[session_key]) > 40:
-                _sessions[session_key] = _sessions[session_key][-40:]
+            if len(_sessions[session_key]) > 20:
+                _sessions[session_key] = _sessions[session_key][-20:]
 
             await websocket.send_text(json.dumps({"type": "end"}))
 

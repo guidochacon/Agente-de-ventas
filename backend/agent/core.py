@@ -48,7 +48,7 @@ async def stream_response(
     client = get_client()
 
     # Retrieve relevant context from knowledge base
-    kb_context = retrieve(user_message, n_results=5)
+    kb_context = retrieve(user_message, n_results=3)
 
     if mode:
         system_prompt = build_coach_prompt(mode=mode, knowledge_context=kb_context)
@@ -71,7 +71,7 @@ async def stream_response(
 
         async with client.messages.stream(
             model=settings.claude_model,
-            max_tokens=2048,
+            max_tokens=1024,
             system=system_prompt,
             tools=TOOLS,
             messages=messages,

@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     @classmethod
     def strip_api_key(cls, v: str) -> str:
         return v.strip() if isinstance(v, str) else v
-    claude_model: str = "claude-sonnet-4-6"
+    claude_model: str = "claude-haiku-4-5-20251001"
 
     # Scheduling
     calendly_api_key: str = ""
