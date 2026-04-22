@@ -1,13 +1,16 @@
 """
-Instagram Reels video generator with motion graphics.
+Instagram Reels video generator and editor with motion graphics.
 Produces 1080x1920 MP4 files using Pillow (frames) + MoviePy (encoding).
+Video editor adds auto-subtitles (faster-whisper) and motion graphics overlays.
 """
 import os
 import re
 import uuid
 import asyncio
+import textwrap
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
+from typing import Optional
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -674,3 +677,397 @@ class VideoService:
             if entry.name.endswith(".mp4") and video_id in entry.name:
                 return entry.path
         return None
+
+
+# ---------------------------------------------------------------------------
+# Subtitle segment dataclass
+# ---------------------------------------------------------------------------
+
+class SubtitleSegment:
+    __slots__ = ("start", "end", "text")
+
+    def __init__(self, start: float, end: float, text: str):
+        self.start = start
+        self.end = end
+        self.text = text.strip()
+
+
+# ---------------------------------------------------------------------------
+# VideoEditorService — edita un video existente con subtítulos y motion graphics
+# ---------------------------------------------------------------------------
+
+class VideoEditorService:
+    """
+    Takes an existing video file and adds:
+    - Auto-generated subtitles via faster-whisper (local, no API key needed)
+    - Optional animated intro (brand title card)
+    - Optional lower-third with speaker name
+    - Optional logo watermark in corner
+
+    All rendering is CPU-bound; runs in a thread executor.
+    """
+
+    SUBTITLE_FONT_SIZE = 52
+    SUBTITLE_MAX_CHARS = 42        # chars per line before wrapping
+    SUBTITLE_PADDING_X = 30
+    SUBTITLE_PADDING_Y = 20
+    SUBTITLE_BOTTOM_OFFSET = 220   # px from bottom of frame
+    SUBTITLE_BG_ALPHA = 180        # 0-255 transparency of pill background
+    SUBTITLE_FADE_FRAMES = 6       # frames for fade-in/out
+
+    def __init__(self):
+        self._whisper_model = None  # lazy-load on first use
+
+    def _get_whisper_model(self):
+        if self._whisper_model is None:
+            from faster_whisper import WhisperModel
+            # "base" is ~150MB, fast, works offline; use "small" for better accuracy
+            self._whisper_model = WhisperModel("base", device="cpu", compute_type="int8")
+        return self._whisper_model
+
+    async def edit(
+        self,
+        input_path: str,
+        add_subtitles: bool = True,
+        whisper_language: Optional[str] = None,   # None = auto-detect
+        add_intro: bool = False,
+        intro_title: str = "",
+        intro_subtitle: str = "",
+        lower_third_name: str = "",
+        lower_third_duration: float = 4.0,
+        business_name: str = "",
+        cta_end: str = "",
+    ) -> dict:
+        """
+        Main entry point. Returns same metadata dict as VideoService.generate().
+        """
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+        loop = asyncio.get_event_loop()
+
+        # Step 1: Transcribe audio (blocking — run in executor)
+        segments: list[SubtitleSegment] = []
+        if add_subtitles:
+            segments = await loop.run_in_executor(
+                _executor,
+                self._transcribe,
+                input_path,
+                whisper_language,
+            )
+
+        # Step 2: Render output video (blocking)
+        video_id = str(uuid.uuid4())
+        filename = f"reel_{video_id}_edited.mp4"
+        output_path = os.path.join(OUTPUT_DIR, filename)
+
+        duration = await loop.run_in_executor(
+            _executor,
+            self._render_edited,
+            input_path,
+            output_path,
+            segments,
+            add_intro,
+            intro_title,
+            intro_subtitle,
+            lower_third_name,
+            lower_third_duration,
+            business_name,
+            cta_end,
+        )
+
+        return {
+            "video_id": video_id,
+            "video_type": "edited",
+            "file_path": output_path,
+            "url": f"/api/videos/{video_id}",
+            "duration_seconds": duration,
+            "subtitle_segments": len(segments),
+            "created_at": datetime.utcnow().isoformat(),
+        }
+
+    # --- Transcription ---
+
+    def _transcribe(
+        self,
+        input_path: str,
+        language: Optional[str],
+    ) -> list[SubtitleSegment]:
+        model = self._get_whisper_model()
+        segs, _info = model.transcribe(
+            input_path,
+            language=language,
+            beam_size=5,
+            word_timestamps=False,
+            vad_filter=True,               # skip silence automatically
+        )
+        result = []
+        for seg in segs:
+            text = seg.text.strip()
+            if not text:
+                continue
+            # Split long segments into shorter lines for readability
+            for chunk in self._split_segment(text, seg.start, seg.end):
+                result.append(chunk)
+        return result
+
+    def _split_segment(
+        self,
+        text: str,
+        start: float,
+        end: float,
+    ) -> list[SubtitleSegment]:
+        """Break a long segment into ~6-word chunks with proportional timestamps."""
+        words = text.split()
+        max_words = 7
+        if len(words) <= max_words:
+            return [SubtitleSegment(start, end, text)]
+
+        chunks = [words[i:i + max_words] for i in range(0, len(words), max_words)]
+        duration = end - start
+        chunk_dur = duration / len(chunks)
+        result = []
+        for i, chunk in enumerate(chunks):
+            cs = start + i * chunk_dur
+            ce = cs + chunk_dur
+            result.append(SubtitleSegment(cs, ce, " ".join(chunk)))
+        return result
+
+    # --- Video rendering ---
+
+    def _render_edited(
+        self,
+        input_path: str,
+        output_path: str,
+        subtitle_segments: list[SubtitleSegment],
+        add_intro: bool,
+        intro_title: str,
+        intro_subtitle: str,
+        lower_third_name: str,
+        lower_third_duration: float,
+        business_name: str,
+        cta_end: str,
+    ) -> float:
+        from moviepy import VideoFileClip, concatenate_videoclips, VideoClip, CompositeVideoClip
+
+        source = VideoFileClip(input_path)
+        src_w, src_h = source.size
+        src_dur = source.duration
+
+        clips = []
+        time_offset = 0.0
+
+        # --- Optional intro card (2.5s) ---
+        intro_duration = 0.0
+        if add_intro and (intro_title or business_name):
+            intro_duration = 2.5
+            renderer = FrameRenderer()
+            title_img = renderer.make_title_frame(
+                "tips",
+                intro_title or business_name,
+            )
+            # Resize intro to match source video dimensions
+            title_img_resized = title_img.resize((src_w, src_h), Image.LANCZOS)
+            intro_arr = _arr(title_img_resized)
+
+            def make_intro(t):
+                return intro_arr
+
+            intro_clip = VideoClip(make_intro, duration=intro_duration)
+            intro_clip = intro_clip.with_fps(FPS)
+            clips.append(intro_clip)
+            time_offset = intro_duration
+
+        # --- Main video with subtitle overlay ---
+        subtitle_layer = self._make_subtitle_layer(
+            subtitle_segments,
+            src_w,
+            src_h,
+            src_dur,
+        )
+
+        # Lower-third overlay
+        lower_third_layer = None
+        if lower_third_name:
+            lower_third_layer = self._make_lower_third(
+                lower_third_name,
+                src_w,
+                src_h,
+                lower_third_duration,
+            )
+
+        overlays = [source]
+        if subtitle_layer:
+            overlays.append(subtitle_layer)
+        if lower_third_layer:
+            overlays.append(lower_third_layer)
+
+        main_clip = CompositeVideoClip(overlays)
+        clips.append(main_clip)
+
+        # --- Optional outro card (2s) ---
+        if cta_end or business_name:
+            renderer = FrameRenderer()
+            outro_img = renderer.make_outro_frame(cta_end, business_name)
+            outro_img_resized = outro_img.resize((src_w, src_h), Image.LANCZOS)
+            outro_arr = _arr(outro_img_resized)
+            outro_duration = 2.0
+
+            def make_outro(t):
+                return outro_arr
+
+            outro_clip = VideoClip(make_outro, duration=outro_duration)
+            outro_clip = outro_clip.with_fps(FPS)
+            clips.append(outro_clip)
+
+        # Concatenate and export
+        final = concatenate_videoclips(clips) if len(clips) > 1 else clips[0]
+        final.write_videofile(
+            output_path,
+            fps=FPS,
+            codec="libx264",
+            audio_codec="aac",
+            ffmpeg_params=["-crf", "23", "-pix_fmt", "yuv420p"],
+            logger=None,
+        )
+
+        total_duration = final.duration
+        final.close()
+        source.close()
+        return total_duration
+
+    # --- Subtitle overlay layer ---
+
+    def _make_subtitle_layer(
+        self,
+        segments: list[SubtitleSegment],
+        width: int,
+        height: int,
+        duration: float,
+    ):
+        if not segments:
+            return None
+
+        from moviepy import VideoClip
+
+        font = _load_font(_FONT_CANDIDATES, self.SUBTITLE_FONT_SIZE)
+        font_reg = _load_font(_FONT_REGULAR_CANDIDATES, self.SUBTITLE_FONT_SIZE)
+
+        def make_frame(t: float) -> np.ndarray:
+            frame = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+
+            # Find active segment
+            active = None
+            for seg in segments:
+                if seg.start <= t <= seg.end:
+                    active = seg
+                    break
+
+            if active is None:
+                return np.array(frame)
+
+            # Fade alpha based on position within segment
+            seg_dur = max(active.end - active.start, 0.1)
+            elapsed = t - active.start
+            fade_dur = self.SUBTITLE_FADE_FRAMES / FPS
+
+            if elapsed < fade_dur:
+                alpha = int(255 * (elapsed / fade_dur))
+            elif elapsed > seg_dur - fade_dur:
+                alpha = int(255 * ((seg_dur - elapsed) / fade_dur))
+            else:
+                alpha = 255
+
+            alpha = max(0, min(255, alpha))
+
+            # Wrap text
+            lines = textwrap.wrap(active.text, width=self.SUBTITLE_MAX_CHARS)
+            if not lines:
+                return np.array(frame)
+
+            # Measure total text block
+            line_h = font.getbbox("Ag")[3] + 8
+            total_text_h = len(lines) * line_h
+            max_line_w = max(font.getbbox(ln)[2] for ln in lines)
+
+            pill_w = max_line_w + self.SUBTITLE_PADDING_X * 2
+            pill_h = total_text_h + self.SUBTITLE_PADDING_Y * 2
+            pill_x = (width - pill_w) // 2
+            pill_y = height - self.SUBTITLE_BOTTOM_OFFSET - pill_h
+
+            # Draw pill background
+            draw = ImageDraw.Draw(frame)
+            bg_alpha = int(self.SUBTITLE_BG_ALPHA * alpha / 255)
+            bg_color = (*BRAND["bg_dark"], bg_alpha)
+            radius = 16
+
+            def rr(d, xy, r, fill):
+                x0, y0, x1, y1 = xy
+                d.rectangle([(x0 + r, y0), (x1 - r, y1)], fill=fill)
+                d.rectangle([(x0, y0 + r), (x1, y1 - r)], fill=fill)
+                d.ellipse([(x0, y0), (x0 + r*2, y0 + r*2)], fill=fill)
+                d.ellipse([(x1 - r*2, y0), (x1, y0 + r*2)], fill=fill)
+                d.ellipse([(x0, y1 - r*2), (x0 + r*2, y1)], fill=fill)
+                d.ellipse([(x1 - r*2, y1 - r*2), (x1, y1)], fill=fill)
+
+            rr(draw, (pill_x, pill_y, pill_x + pill_w, pill_y + pill_h), radius, bg_color)
+
+            # Draw text lines
+            text_alpha = alpha
+            text_color = (*BRAND["text_white"], text_alpha)
+            cur_y = pill_y + self.SUBTITLE_PADDING_Y
+            for line in lines:
+                lw = font.getbbox(line)[2]
+                lx = (width - lw) // 2
+                draw.text((lx, cur_y), line, font=font, fill=text_color)
+                cur_y += line_h
+
+            return np.array(frame)
+
+        clip = VideoClip(make_frame, duration=duration, is_mask=False)
+        clip = clip.with_fps(FPS)
+        return clip
+
+    # --- Lower-third overlay ---
+
+    def _make_lower_third(
+        self,
+        name: str,
+        width: int,
+        height: int,
+        show_duration: float,
+    ):
+        from moviepy import VideoClip
+
+        bar_h = 80
+        bar_y = height - 220
+        font_name = _load_font(_FONT_CANDIDATES, 38)
+        font_role = _load_font(_FONT_REGULAR_CANDIDATES, 26)
+        fade_dur = 0.4
+        total_dur = show_duration + fade_dur * 2
+
+        def make_frame(t: float) -> np.ndarray:
+            frame = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+
+            if t < fade_dur:
+                alpha = int(255 * (t / fade_dur))
+            elif t > total_dur - fade_dur:
+                alpha = int(255 * ((total_dur - t) / fade_dur))
+            else:
+                alpha = 255
+
+            alpha = max(0, min(255, alpha))
+            draw = ImageDraw.Draw(frame)
+
+            # Accent bar
+            bar_color = (*BRAND["accent"], alpha)
+            draw.rectangle([(0, bar_y), (width, bar_y + 4)], fill=bar_color)
+
+            # Name
+            name_color = (*BRAND["text_white"], alpha)
+            draw.text((40, bar_y + 12), name, font=font_name, fill=name_color)
+
+            return np.array(frame)
+
+        clip = VideoClip(make_frame, duration=total_dur, is_mask=False)
+        clip = clip.with_fps(FPS)
+        return clip
