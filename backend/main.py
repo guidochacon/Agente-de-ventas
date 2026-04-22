@@ -13,6 +13,7 @@ from api.leads import router as leads_router
 from api.knowledge import router as knowledge_router
 from api.quotes import router as quotes_router
 from api.scheduling import router as scheduling_router
+from api.video import router as video_router
 
 
 @asynccontextmanager
@@ -44,6 +45,12 @@ app.include_router(leads_router)
 app.include_router(knowledge_router)
 app.include_router(quotes_router)
 app.include_router(scheduling_router)
+app.include_router(video_router)
+
+# Serve generated videos
+VIDEOS_DIR = os.path.join(os.path.dirname(__file__), "output", "videos")
+os.makedirs(VIDEOS_DIR, exist_ok=True)
+app.mount("/output/videos", StaticFiles(directory=VIDEOS_DIR), name="videos")
 
 # Serve widget
 WIDGET_DIST = os.path.join(os.path.dirname(__file__), "..", "widget", "dist")

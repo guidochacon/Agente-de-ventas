@@ -47,6 +47,35 @@ TOOLS = [
         },
     },
     {
+        "name": "generate_reel",
+        "description": (
+            "Genera un video de Instagram Reels con motion graphics. "
+            "Usá 'tips' para crear un Reel con consejos de ventas de la base de conocimiento. "
+            "Usá 'metrics' para crear un Reel con estadísticas de leads y conversiones. "
+            "Usá esta herramienta cuando pidan crear contenido para redes sociales o Instagram."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "video_type": {
+                    "type": "string",
+                    "enum": ["tips", "metrics"],
+                    "description": "Tipo: 'tips' para consejos de ventas, 'metrics' para estadísticas",
+                },
+                "tips_count": {
+                    "type": "integer",
+                    "description": "Cantidad de tips (solo tipo 'tips'). Default: 5, máximo: 7",
+                    "default": 5,
+                },
+                "cta_text": {
+                    "type": "string",
+                    "description": "Texto de CTA para el final del video (opcional)",
+                },
+            },
+            "required": ["video_type"],
+        },
+    },
+    {
         "name": "generate_quote",
         "description": "Genera una cotización para el prospecto. Usá cuando el prospecto pida precios o una propuesta formal.",
         "input_schema": {
@@ -109,6 +138,26 @@ async def execute_tool(
             details=tool_input.get("details", ""),
         )
         return f"Cotización generada. ID: {quote.id}. El prospecto puede descargarla en /api/quotes/{quote.id}/pdf"
+
+    elif tool_name == "generate_reel":
+        if db is None:
+            return "No se pudo generar el video (sin conexión a DB)."
+        from services.video_service import VideoService
+        from config import settings
+        service = VideoService(db)
+        result = await service.generate(
+            video_type=tool_input.get("video_type", "tips"),
+            business_name=settings.agent_business_name,
+            tips_count=tool_input.get("tips_count", 5),
+            cta_text=tool_input.get("cta_text", ""),
+        )
+        duration = result.get("duration_seconds", 0)
+        url = result.get("url", "")
+        return (
+            f"Reel de Instagram generado exitosamente. "
+            f"Tipo: {result['video_type']}, Duración: {duration:.0f}s. "
+            f"Descargalo en: {url}"
+        )
 
     else:
         return f"Herramienta '{tool_name}' no reconocida."
