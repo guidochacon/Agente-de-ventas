@@ -13,7 +13,7 @@ import { colors } from './theme.js'
 
 export default function App() {
   return (
-    <BrowserRouter basename="/dashboard">
+    <BrowserRouter basename="">
       <div style={{
         display: 'flex',
         height: '100dvh',

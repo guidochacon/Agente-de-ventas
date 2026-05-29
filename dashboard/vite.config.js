@@ -3,11 +3,11 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/dashboard/',
+  base: '/',
   build: { outDir: 'dist' },
   server: {
     proxy: {
-      '/api': 'http://localhost:8000'
+      '/api': process.env.VITE_API_URL || 'http://localhost:8000'
     }
   }
 })

@@ -1,7 +1,8 @@
-const BASE = '/api/dashboard'
+const API_ROOT = import.meta.env.VITE_API_URL || ''
+const BASE = API_ROOT + '/api/dashboard'
 
 async function req(path, opts = {}) {
-  const url = path.startsWith('/api') ? path : BASE + path
+  const url = path.startsWith('/api') ? API_ROOT + path : BASE + path
   const r = await fetch(url, {
     headers: { 'Content-Type': 'application/json' },
     ...opts,
