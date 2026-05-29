@@ -36,3 +36,6 @@ sendgrid==6.11.0
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 aiofiles==24.1.0
+
+# Google Sheets integration (optional — only needed when GOOGLE_SERVICE_ACCOUNT_JSON is set)
+google-auth==2.35.0

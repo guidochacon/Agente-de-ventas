@@ -7,12 +7,38 @@ from fastapi.responses import HTMLResponse
 
 from config import settings
 from models.database import init_db
+from models import SalesAgent, AsyncSessionLocal
 from api.chat import router as chat_router
 from api.coach import router as coach_router
 from api.leads import router as leads_router
 from api.knowledge import router as knowledge_router
 from api.quotes import router as quotes_router
 from api.scheduling import router as scheduling_router
+from api.dashboard import router as dashboard_router
+from sqlalchemy import select
+
+
+async def _seed_agents():
+    import json as _json
+    raw = settings.seed_agents
+    if not raw:
+        return
+    try:
+        agents_data = _json.loads(raw)
+    except Exception:
+        return
+    async with AsyncSessionLocal() as db:
+        for a in agents_data:
+            result = await db.execute(select(SalesAgent).where(SalesAgent.email == a.get("email", "")))
+            if not result.scalar_one_or_none():
+                import uuid as _uuid
+                db.add(SalesAgent(
+                    id=str(_uuid.uuid4()),
+                    name=a.get("name", "Agente"),
+                    email=a.get("email", ""),
+                    role=a.get("role", "agent"),
+                ))
+        await db.commit()
 
 
 @asynccontextmanager
@@ -20,6 +46,7 @@ async def lifespan(app: FastAPI):
     # ChromaDB data is pre-built into the Docker image at build time.
     # Only need to create SQLite tables here (fast, non-blocking).
     await init_db()
+    await _seed_agents()
     yield
 
 
@@ -44,6 +71,12 @@ app.include_router(leads_router)
 app.include_router(knowledge_router)
 app.include_router(quotes_router)
 app.include_router(scheduling_router)
+app.include_router(dashboard_router)
+
+# Serve dashboard
+DASHBOARD_DIST = os.path.join(os.path.dirname(__file__), "..", "dashboard", "dist")
+if os.path.exists(DASHBOARD_DIST):
+    app.mount("/dashboard", StaticFiles(directory=DASHBOARD_DIST, html=True), name="dashboard")
 
 # Serve widget
 WIDGET_DIST = os.path.join(os.path.dirname(__file__), "..", "widget", "dist")

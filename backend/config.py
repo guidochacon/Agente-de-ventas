@@ -42,6 +42,18 @@ class Settings(BaseSettings):
     agent_welcome_message: str = "¡Hola! Soy Alex, ¿en qué puedo ayudarte hoy?"
     collect_lead_after_messages: int = 2
 
+    # Google Sheets integration
+    google_service_account_json: str = ""
+    google_sheets_id: str = ""
+
+    # GoHighLevel integration
+    ghl_api_key: str = ""
+    ghl_location_id: str = ""
+    ghl_pipeline_id: str = ""
+
+    # Dashboard seed agents (JSON array of {name, email, role})
+    seed_agents: str = '[{"name":"Agente 1","email":"agente1@equipo.com","role":"closer"},{"name":"Agente 2","email":"agente2@equipo.com","role":"closer"},{"name":"Setter 1","email":"setter1@equipo.com","role":"setter"},{"name":"Setter 2","email":"setter2@equipo.com","role":"setter"}]'
+
     # App
     env: str = "development"
     port: int = 8000
